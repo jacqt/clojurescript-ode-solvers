@@ -79,8 +79,8 @@
               panZoomInteraction (js/Plottable.Interactions.PanZoom. xScale nil)]
           (.x plot #(aget %1 (get labels 1)) xScale)
           (.y plot #(aget %1 (get labels 0)) yScale)
-          (plot.attachTo panZoomInteraction)
-          (plot.addDataset (js/Plottable.Dataset. (clj->js dataset)))     
+          (.attachTo panZoomInteraction plot)
+          (.addDataset plot (js/Plottable.Dataset. (clj->js dataset)))     
           (om/set-state! owner :plot plot)
           (om/set-state! owner :chart (js/Plottable.Components.Table. (clj->js [[yAxis plot] [nil xAxis]]))))))
 
