@@ -22,6 +22,7 @@
       (range (+ start-time timestep) end timestep))))
 
 
+;; Boring plots
 (defn dy-dt-1 [_ _]
   1)
 
@@ -32,14 +33,34 @@
   y)
 
 
-; Circle
+;; Circle
 (defn circle-dy1-dt [y1 y2 t]
   y2)
 
 (defn circle-dy2-dt [y1 y2 t]
   (- y1))
 
-(defn plotter [[labels dataset] owner]
+;; FitzHugh-Nagumo Model
+
+(defn fhn-dv [alpha epsilon Iapp]
+  (fn [v w t]
+    (/
+      (+
+        (-
+          (*
+            (- v)
+            (- v alpha)
+            (- v 1))
+          w)
+        Iapp)
+      epsilon)))
+
+(defn fhn-dw [gamma]
+  (fn [v w t]
+    (- v (* gamma w))))
+
+;; a beautiful plotter component
+(defn plotter [[labels dataset title] owner]
   (reify
     om/IInitState
     (init-state [_]
@@ -70,10 +91,9 @@
     (render-state [this state]
       (dom/div
         #js {:className "ui segment"}
-        (dom/h2 nil "Bro.")
         (dom/div
           #js {}
-          (dom/h3 nil "A graph of your ODE solver!")
+          (dom/h3 nil title)
           (dom/svg #js {:className "ode-graph"}))))
 
     om/IWillUpdate
@@ -81,6 +101,9 @@
       (.datasets
         (om/get-state owner :plot)
         #js [(js/Plottable.Dataset. (clj->js dataset))]))))
+
+(defn fitzhugh-nagumo [{:keys [alpha epsilon gamma Iapp]}]
+  (forward-euler-integrate [(fhn-dv alpha epsilon Iapp) (fhn-dw gamma)] {:v 0.64 :w 0} 0 1 0.001))
 
 (defn dashboard-view[app-state owner]
   (reify
@@ -95,13 +118,11 @@
             "ODE Solver in Clojurescript"))
         (dom/div
           #js {:className "dashboard-content"}
-          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.01)])
-          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-t] {:y 0} 0 10 0.01)])
-          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-y] {:y 1} 0 10 0.01)])
-          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.01)])
-          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.1)])
-          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 100 0.1)])
-          (with-out-str (print (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 1)))
-          )))))
-
-
+          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.01) "dy/dt = 1"])
+          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-t] {:y 0} 0 10 0.01) "dy/dt = t"])
+          (om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-y] {:y 1} 0 10 0.01) "dy/dt = y"])
+          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.5) "Circle, timestep of 0.5"])
+          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 100 0.1) "Cricle, timestep of 0.1"])
+          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 5 :y2 0} 0 6.3 0.01) "Circle, timestep of 0.01"])
+          (om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.001) "Circle timestep of 0.001"])
+          (om/build plotter [["v" "t"] (fitzhugh-nagumo {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0}) "FitzHugh-Nagumo model"]))))))
