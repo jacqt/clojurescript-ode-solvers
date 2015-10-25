@@ -1,7 +1,6 @@
 (ns ode-solver.components.dashboard
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [cljs.core.async :refer [put! chan <!]]
             [cljsjs.plottable]
             [cljsjs.jquery]
             [ode-solver.utils.inputs :as inputs]))
@@ -80,10 +79,8 @@
               panZoomInteraction (js/Plottable.Interactions.PanZoom. xScale nil)]
           (.x plot #(aget %1 (get labels 1)) xScale)
           (.y plot #(aget %1 (get labels 0)) yScale)
-          (.attachTo panZoomInteraction plot)
-          (.addDataset
-            plot
-            (js/Plottable.Dataset. (clj->js dataset)))     
+          (plot.attachTo panZoomInteraction)
+          (plot.addDataset (js/Plottable.Dataset. (clj->js dataset)))     
           (om/set-state! owner :plot plot)
           (om/set-state! owner :chart (js/Plottable.Components.Table. (clj->js [[yAxis plot] [nil xAxis]]))))))
 

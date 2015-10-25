@@ -1,10 +1,8 @@
 (ns ode-solver.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [cljsjs.jquery]
             [secretary.core :as secretary :include-macros true :refer-macros [defroute]]
-            [cljs.core.async :refer [put! chan <!]]
             [ode-solver.router :as router]
             [ode-solver.index :as index]))
 
