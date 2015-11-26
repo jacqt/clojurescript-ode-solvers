@@ -170,22 +170,29 @@
 
 (defn get-euclidian-distance [coord1 coord2]
   {:pre [(= (-> coord1 keys sort) (-> coord2 keys sort))]}
-  (js/Math.sqrt
    (reduce
     (fn [dist-sq coord-key]
       (js/Math.pow (- (coord-key coord1) (coord-key coord2)) 2))
      0
-     (keys coord1))))
+     (keys coord1)))
 
 (defn get-error [solver {:keys [diff-equations start-values start-time end timestep expected-values-equations]}]
-  (let [last-data (last (solver diff-equations start-values start-time end timestep))]
-    (get-euclidian-distance
-      (dissoc last-data :t)
-      (reduce
-        (fn [expected-values k]
-          (assoc expected-values k ((k expected-values-equations ) (:t last-data))))
-        {}
-        (keys expected-values-equations)))))
+  (let [data (solver diff-equations start-values start-time end timestep)]
+    (js/Math.sqrt
+      (/
+         (reduce
+           (fn [total-error next-data]
+             (+ total-error
+                (get-euclidian-distance
+                  (dissoc next-data :t)
+                  (reduce
+                    (fn [expected-values k]
+                      (assoc expected-values k ((k expected-values-equations) (:t next-data))))
+                    {}
+                    (keys expected-values-equations)))))
+           0
+           data)
+         (/ (- end start-time) timestep)))))
 
 (defn get-all-errors [solver {:keys [diff-equations start-values start-time end min-timestep max-timestep expected-values-equations]}]
   (reduce
@@ -237,10 +244,10 @@
                                 :start-values {:y1 1 :y2 0}
                                 :start-time 0
                                 :end 6.0
-                                :min-timestep 0.002
-                                :max-timestep 1
-                                :expected-values-equations {:y1 js/Math.cos
-                                                            :y2 js/Math.sin}})
+                                :min-timestep 0.001
+                                :max-timestep 0.1
+                                :expected-values-equations {:y1 #(js/Math.cos (- %))
+                                                            :y2 #(js/Math.sin (- %))}})
                              "dy/dt = 1"])
 
           ;(om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.01) "dy/dt = 1"])
