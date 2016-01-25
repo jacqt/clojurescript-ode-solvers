@@ -128,13 +128,13 @@
    :lineWidth 2
    :marker {:enabled false}})
 
-(defn create-chart [container datasets y-axis-type]
+(defn create-chart [container datasets y-axis-type title]
   (js/Highcharts.Chart.
     (clj->js
       {:chart {:renderTo container
                :type "scatter"}
        :plotOptions {:series {:turboThreshold 0}}
-       :title {:text "A chart..."}
+       :title {:text title}
        :xAxis {:type "linear"}
        :yAxis {:type y-axis-type}
        :series (map gen-data-series datasets)})))
@@ -168,7 +168,7 @@
     (did-mount [_]
       (let [container (-> (om/get-node owner) js/$. (.find ".container") (.get 0))
             datasets (label-all datasets labels)]
-        (om/set-state! owner :chart (create-chart container datasets y-axis-type))))))
+        (om/set-state! owner :chart (create-chart container datasets y-axis-type title))))))
 
 (defn fitzhugh-nagumo [solver {:keys [alpha epsilon gamma Iapp]}]
   (solver [(fhn-dv alpha epsilon Iapp) (fhn-dw gamma)] {:v 0.64 :w 0} 0 1 0.005))
@@ -254,7 +254,7 @@
                                    :expected-values-equations {:y1 #(js/Math.cos (- %))
                                                                :y2 #(js/Math.sin (- %))}})
                                 "logarithmic"
-                                "dy/dt = 1"])
+                                "Error vs Timestep; solving circles with different solvers"])
 
           (om/build highcharts [["y" "t"] [(forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.1)] "linear" "dy/dt = 1"])
           ;(om/build highcharts [["y" "t"] (forward-euler-integrate [dy-dt-t] {:y 0} 0 10 0.01) "dy/dt = t"])
