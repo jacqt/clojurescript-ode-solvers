@@ -1,8 +1,8 @@
 (ns ode-solver.components.dashboard
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [cljsjs.plottable]
             [cljsjs.jquery]
+            [cljsjs.highcharts]
             [ode-solver.utils.inputs :as inputs]))
 
 (defn abs [n]
@@ -69,7 +69,7 @@
 (defn estimate-error [diff-equations current-timestep previous-values current-time]
   (let [err0 (repeat-predictor diff-equations current-timestep previous-values current-time 1)]
     (let [err1 (repeat-predictor diff-equations current-timestep previous-values current-time 2)]
-      (js/console.log (clj->js err0) (clj->js err1) current-timestep)
+      ;;(js/console.log (clj->js err0) (clj->js err1) current-timestep)
       (reduce (fn [old [a b]] (+ old (abs (- a b)))) 0 (map vector err0 err1)))))
 
 ;; define it recursively
@@ -78,8 +78,8 @@
     []
     (let [error-estimate (estimate-error diff-equations current-timestep (vals previous-values) current-time)]
       (let [new-timestep (min (* 0.9 current-timestep (/ tolerance error-estimate)) 1)]
-        (js/console.log error-estimate)
-        (js/console.log new-timestep)
+        ;;(js/console.log error-estimate)
+        ;;(js/console.log new-timestep)
         (let [next-values (euler-predict-correct-next-value diff-equations new-timestep (vals previous-values) current-time)]
           (let [labeled-values (zipmap (keys previous-values) next-values)]
             (conj
@@ -123,6 +123,32 @@
   (fn [v w t]
     (- v (* gamma w))))
 
+(defn create-chart [container datasets]
+  (js/Highcharts.Chart.
+    (clj->js
+      {:chart {:renderTo container}
+       :plotOptions {:series {:turboThreshold 0}}
+       :title {:text "A chart..."}
+       :xAxis {:type "linear"}
+       :yAxis {:type "logarithmic"}
+       :series (map (fn [data] {:data data}) datasets)})))
+
+(defn highcharts [[labels datasets title] owner]
+  (reify
+    om/IRender
+    (render [this]
+      (dom/div #js {:className "ui segment"}
+               (dom/div #js {:className "container"})))
+
+    om/IInitState
+    (init-state [_]
+      {:chart nil})
+
+    om/IDidMount
+    (did-mount [_]
+      (let [container (-> (om/get-node owner) js/$. (.find ".container") (.get 0))]
+        (om/set-state! owner :chart (create-chart container datasets))))))
+
 ;; a beautiful plotter component
 (defn plotter [[labels datasets title] owner]
   (reify
@@ -138,7 +164,7 @@
     (will-mount [_]
       (let [plot (js/Plottable.Plots.Line. )
             xScale (js/Plottable.Scales.Linear.)
-            yScale (js/Plottable.Scales.Linear.)]
+            yScale (js/Plottable.Scales.ModifiedLog.)]
         (let [xAxis (js/Plottable.Axes.Numeric. xScale "bottom")
               yAxis (js/Plottable.Axes.Numeric. yScale "left")
               panZoomInteraction (js/Plottable.Interactions.PanZoom. xScale nil)]
@@ -165,7 +191,7 @@
           (clj->js (map (fn [dataset] (js/Plottable.Dataset. (clj->js dataset))) datasets))))))
 
 (defn fitzhugh-nagumo [solver {:keys [alpha epsilon gamma Iapp]}]
-  (solver [(fhn-dv alpha epsilon Iapp) (fhn-dw gamma)] {:v 0.64 :w 0} 0 2 0.01))
+  (solver [(fhn-dv alpha epsilon Iapp) (fhn-dw gamma)] {:v 0.64 :w 0} 0 2 0.1))
 
 
 (defn get-euclidian-distance [coord1 coord2]
@@ -197,17 +223,17 @@
 (defn get-all-errors [solver {:keys [diff-equations start-values start-time end min-timestep max-timestep expected-values-equations]}]
   (reduce
     (fn [previous-data-points next-timestep]
-      (conj previous-data-points {:timestep next-timestep
-                                  :error (get-error
-                                           solver
-                                           {:diff-equations diff-equations
-                                            :start-values start-values
-                                            :start-time start-time
-                                            :end end
-                                            :timestep next-timestep
-                                            :expected-values-equations expected-values-equations})}))
+      (conj previous-data-points {:x next-timestep
+                                  :y (get-error
+                                       solver
+                                       {:diff-equations diff-equations
+                                        :start-values start-values
+                                        :start-time start-time
+                                        :end end
+                                        :timestep next-timestep
+                                        :expected-values-equations expected-values-equations})}))
     []
-    (range min-timestep max-timestep min-timestep)))
+    (range min-timestep max-timestep (/ (- max-timestep min-timestep) 200))))
 
 (defn compare-solvers [[solver-1 solver-2] options]
   (let [errors-1 (get-all-errors solver-1 options)
@@ -237,7 +263,7 @@
                                 ;:max-timestep 0.1
                                 ;:expected-values-equations {:y1 js/Math.cos
                                                   ;:y2 js/Math.sin}})))
-          (om/build plotter [["error" "timestep"]
+          (om/build highcharts [["error" "timestep"]
                              (compare-solvers
                                [forward-euler-integrate euler-pc]
                                {:diff-equations [circle-dy1-dt circle-dy2-dt]
@@ -245,12 +271,12 @@
                                 :start-time 0
                                 :end 6.0
                                 :min-timestep 0.001
-                                :max-timestep 0.1
+                                :max-timestep 1.0
                                 :expected-values-equations {:y1 #(js/Math.cos (- %))
                                                             :y2 #(js/Math.sin (- %))}})
                              "dy/dt = 1"])
 
-          ;(om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.01) "dy/dt = 1"])
+          ;(om/build highcharts [["y" "t"] (forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.01) "dy/dt = 1"])
           ;(om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-t] {:y 0} 0 10 0.01) "dy/dt = t"])
           ;(om/build plotter [["y" "t"] (forward-euler-integrate [dy-dt-y] {:y 1} 0 10 0.01) "dy/dt = y"])
           ;(om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.5) "Circle, timestep of 0.5"])
@@ -259,11 +285,13 @@
           ;(om/build plotter [["y1" "y2"] (forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1) "Forward Euler: 0.1"])
           ;(om/build plotter [["y1" "y2"] (euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1) "Euler predictor-corrector timestep of 0.1"])
           ;(om/build plotter [["y1" "y2"] (euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.5) "Euler predictor-corrector timestep of 0.5"])
-          ;(om/build plotter [["y1" "y2"] (euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 100 0.1)
-                             ;"Euler predictor-corrector timestep of 0.1 t 0 - 100"])
-          ;(om/build plotter [["y1" "y2"] (euler-adaptive [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.2 0.5)
-                             ;"Euler adaptive init-timestep of 0.1, tolerance = 0.5 t 0 - 100"])
-          ;(om/build plotter [["v" "t"] (fitzhugh-nagumo forward-euler-integrate {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})
-                             ;"Forward Euler FitzHugh-Nagumo model timestep 0.1"])
-          (om/build plotter [["v" "t"] [(fitzhugh-nagumo euler-pc {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
-                             "Euler-pc FitzHugh-Nagumo model timestep 0.1"]))))))
+          ;; (om/build plotter [["y1" "y2"] (euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 100 0.1)
+          ;;                    "Euler predictor-corrector timestep of 0.1 t 0 - 100"])
+          ;; (om/build plotter [["y1" "y2"] (euler-adaptive [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.2 0.5)
+          ;;                    "Euler adaptive init-timestep of 0.1, tolerance = 0.5 t 0 - 100"])
+          ;; (om/build plotter [["v" "t"] (fitzhugh-nagumo forward-euler-integrate {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})
+          ;;                    "Forward Euler FitzHugh-Nagumo model timestep 0.1"])
+          ;; (om/build plotter [["v" "t"] [(fitzhugh-nagumo euler-pc {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
+          ;;                    "Euler-pc FitzHugh-Nagumo model timestep 0.1"])
+          
+          )))))

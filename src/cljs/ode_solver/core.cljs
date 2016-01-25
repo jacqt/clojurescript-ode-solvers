@@ -1,7 +1,6 @@
 (ns ode-solver.core
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [cljsjs.jquery]
             [secretary.core :as secretary :include-macros true :refer-macros [defroute]]
             [ode-solver.router :as router]
             [ode-solver.index :as index]))

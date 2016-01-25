@@ -2,7 +2,6 @@
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [cljsjs.jquery]
-            [cljsjs.jquery-ui]
             [cljsjs.bootstrap]
             [cljsjs.bootstrap-timepicker]))
 

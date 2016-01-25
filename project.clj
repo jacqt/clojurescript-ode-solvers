@@ -20,12 +20,9 @@
                  [secretary "1.2.3"]
                  [cljsjs/bootstrap "3.3.5-0"]
                  [cljsjs/bootstrap-timepicker "0.5.1-0"]
-                 [cljsjs/d3 "3.5.5-3"]
-                 [cljsjs/google-maps "3.18-1"]
                  [cljsjs/jquery "1.9.1-0"]
-                 [cljsjs/jquery-ui "1.11.3-1"]
                  [cljsjs/moment "2.10.6-0"]
-                 [cljsjs/plottable "1.12.0-0"]
+                 [cljsjs/highcharts "4.1.10-2"]
                  [environ "1.0.0"]]
 
   :plugins [[lein-cljsbuild "1.0.5"]
