@@ -36,12 +36,17 @@
   (reify
     om/IDidMount
     (did-mount [_]
-      (-> (js/$. (om/get-node owner)) (.dropdown
-                                        #js {:onChange (fn [value text]
-                                                         (om/transact!
-                                                           parent-state
-                                                           edit-key
-                                                           (fn [_] value)))})))
+      (js/console.log (edit-key parent-state))
+      (->
+        (js/$. (om/get-node owner))
+        (.dropdown
+          #js {:onChange (fn [value text]
+                           (om/transact!
+                             parent-state
+                             edit-key
+                             (fn [_] value)))})
+        (.dropdown
+          "set selected" (edit-key parent-state))))
 
     om/IRenderState
     (render-state [_ _]

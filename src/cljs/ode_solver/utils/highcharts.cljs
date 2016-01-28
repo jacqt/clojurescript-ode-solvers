@@ -34,6 +34,11 @@
        :yAxis {:type y-axis-type}
        :series (map gen-data-series datasets)})))
 
+(defn update-chart! [{:keys [owner labels datasets y-axis-type title]}]
+  (let [container (-> (om/get-node owner) js/$. (.find ".container") (.get 0))
+        datasets (label-all datasets labels)]
+    (om/set-state! owner :chart (create-chart container datasets y-axis-type title))))
+
 (defn highcharts [[labels datasets y-axis-type title] owner]
   (reify
     om/IRender
@@ -45,8 +50,20 @@
     (init-state [_]
       {:chart nil})
 
+    om/IDidUpdate
+    (did-update [_ [prev-labels prev-datasets prev-y-axis-type prev-title] _]
+      (let [[labels datasets y-axis-type title] (om/get-props owner)]
+        (if-not (= prev-datasets datasets)
+          (update-chart! {:owner owner
+                          :labels labels
+                          :datasets datasets
+                          :y-axis-type y-axis-type
+                          :title title}))))
+
     om/IDidMount
     (did-mount [_]
-      (let [container (-> (om/get-node owner) js/$. (.find ".container") (.get 0))
-            datasets (label-all datasets labels)]
-        (om/set-state! owner :chart (create-chart container datasets y-axis-type title))))))
+      (update-chart! {:owner owner
+                      :labels labels
+                      :datasets datasets
+                      :y-axis-type y-axis-type
+                      :title title}))))
