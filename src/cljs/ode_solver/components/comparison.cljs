@@ -29,8 +29,7 @@
              (om/build highcharts/highcharts [["y1" "t"]
                                               [(:graph-data app-state)]
                                               "linear"
-                                              "Euler adaptive init-timestep of 0.1, tolerance = 0.5 t 0 - 100"])
-
+                                              (:data-file app-state)]) 
              ]))))
 (defn select-file-view [app-state owner]
   (reify
