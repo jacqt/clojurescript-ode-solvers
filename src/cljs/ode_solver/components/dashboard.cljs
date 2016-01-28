@@ -2,8 +2,7 @@
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [cljsjs.jquery]
-            [cljsjs.highcharts]
-            [ode-solver.utils.inputs :as inputs]))
+            [ode-solver.utils.highcharts :as highcharts]))
 
 (defn abs [n]
   (max n (- n)))
@@ -124,58 +123,6 @@
     (- v (* gamma w))))
 
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;; GRAPH ;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn gen-data-series [dataset]
-  {:data dataset
-   :lineWidth 2
-   :marker {:enabled false}})
-
-(defn label-dataset [[y-label x-label] dataset]
-  (let [x-label (keyword x-label)
-        y-label (keyword y-label)]
-    (map
-      (fn [data-point]
-        {:x (x-label data-point)
-         :y (y-label data-point)})
-      dataset)))
-
-(defn label-all [datasets labels]
-  (map
-    (partial label-dataset labels)
-    datasets))
-
-(defn create-chart [container datasets y-axis-type title]
-  (js/Highcharts.Chart.
-    (clj->js
-      {:chart {:renderTo container
-               :type "scatter"}
-       :plotOptions {:series {:turboThreshold 0}}
-       :title {:text title}
-       :xAxis {:type "linear"}
-       :yAxis {:type y-axis-type}
-       :series (map gen-data-series datasets)})))
-
-(defn highcharts [[labels datasets y-axis-type title] owner]
-  (reify
-    om/IRender
-    (render [this]
-      (dom/div #js {:className "ui segment"}
-               (dom/div #js {:className "container"})))
-
-    om/IInitState
-    (init-state [_]
-      {:chart nil})
-
-    om/IDidMount
-    (did-mount [_]
-      (let [container (-> (om/get-node owner) js/$. (.find ".container") (.get 0))
-            datasets (label-all datasets labels)]
-        (om/set-state! owner :chart (create-chart container datasets y-axis-type title))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;; OTHER SHIT ;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,58 +190,58 @@
             "ODE Solver in Clojurescript"))
         (dom/div
           #js {:className "dashboard-content"}
-          (om/build highcharts [["error" "timestep"]
-                                (compare-solvers
-                                  [forward-euler-integrate euler-pc]
-                                  {:diff-equations [circle-dy1-dt circle-dy2-dt]
-                                   :start-values {:y1 1 :y2 0}
-                                   :start-time 0
-                                   :end 6.0
-                                   :min-timestep 0.001
-                                   :max-timestep 1.0
-                                   :expected-values-equations {:y1 #(js/Math.cos (- %))
-                                                               :y2 #(js/Math.sin (- %))}})
-                                "logarithmic"
-                                "Error vs Timestep; solving circles with different solvers"])
+          (om/build highcharts/highcharts [["error" "timestep"]
+                                           (compare-solvers
+                                             [forward-euler-integrate euler-pc]
+                                             {:diff-equations [circle-dy1-dt circle-dy2-dt]
+                                              :start-values {:y1 1 :y2 0}
+                                              :start-time 0
+                                              :end 6.0
+                                              :min-timestep 0.001
+                                              :max-timestep 1.0
+                                              :expected-values-equations {:y1 #(js/Math.cos (- %))
+                                                                          :y2 #(js/Math.sin (- %))}})
+                                           "logarithmic"
+                                           "Error vs Timestep; solving circles with different solvers"])
 
-          (om/build highcharts [["y" "t"] [(forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.1)] "linear" "dy/dt = 1"])
+          (om/build highcharts/highcharts [["y" "t"] [(forward-euler-integrate [dy-dt-1] {:y 0} 0 10 0.1)] "linear" "dy/dt = 1"])
           ;(om/build highcharts [["y" "t"] (forward-euler-integrate [dy-dt-t] {:y 0} 0 10 0.01) "dy/dt = t"])
           ;(om/build highcharts [["y" "t"] (forward-euler-integrate [dy-dt-y] {:y 1} 0 10 0.01) "dy/dt = y"])
-          (om/build highcharts [["y1" "y2"]
-                                [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.5)]
-                                "linear"
-                                "Circle, timestep of 0.5"])
-          (om/build highcharts [["y1" "y2"]
-                                [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 100 0.1)]
-                                "linear"
-                                "Cricle, timestep of 0.1"])
-          (om/build highcharts [["y1" "y2"]
-                                [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 5 :y2 0} 0 6.3 0.01)]
-                                "linear"
-                                "Circle, timestep of 0.01"])
-          (om/build highcharts [["y1" "y2"]
-                                [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1)]
-                                "linear"
-                                "Forward Euler: 0.1"])
-          (om/build highcharts [["y1" "y2"]
-                                [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1)]
-                                "linear"
-                                "Euler predictor-corrector timestep of 0.1"])
-          (om/build highcharts [["y1" "y2"]
-                                [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.5)]
-                                "linear"
-                                "Euler predictor-corrector timestep of 0.5"])
-          (om/build highcharts [["y1" "y2"] [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 100 0.1)]
-                                "linear"
-                                "Euler predictor-corrector timestep of 0.1 t 0 - 100"])
-          (om/build highcharts [["y1" "y2"] [(euler-adaptive [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.2 0.5)]
-                                "linear"
-                                "Euler adaptive init-timestep of 0.1, tolerance = 0.5 t 0 - 100"])
-          (om/build highcharts [["v" "t"]
-                                [(fitzhugh-nagumo forward-euler-integrate {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
-                                "linear"
-                                "Forward Euler FitzHugh-Nagumo model timestep 0.1"])
-          (om/build highcharts [["v" "t"]
-                                [(fitzhugh-nagumo euler-pc {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
-                                "linear"
-                                "Euler-pc FitzHugh-Nagumo model timestep 0.1"]))))))
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 10 0.5)]
+                                           "linear"
+                                           "Circle, timestep of 0.5"])
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 1 :y2 0} 0 100 0.1)]
+                                           "linear"
+                                           "Cricle, timestep of 0.1"])
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 5 :y2 0} 0 6.3 0.01)]
+                                           "linear"
+                                           "Circle, timestep of 0.01"])
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(forward-euler-integrate [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1)]
+                                           "linear"
+                                           "Forward Euler: 0.1"])
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.1)]
+                                           "linear"
+                                           "Euler predictor-corrector timestep of 0.1"])
+          (om/build highcharts/highcharts [["y1" "y2"]
+                                           [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.5)]
+                                           "linear"
+                                           "Euler predictor-corrector timestep of 0.5"])
+          (om/build highcharts/highcharts [["y1" "y2"] [(euler-pc [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 100 0.1)]
+                                           "linear"
+                                           "Euler predictor-corrector timestep of 0.1 t 0 - 100"])
+          (om/build highcharts/highcharts [["y1" "y2"] [(euler-adaptive [circle-dy1-dt circle-dy2-dt] {:y1 10 :y2 0} 0 6.3 0.2 0.5)]
+                                           "linear"
+                                           "Euler adaptive init-timestep of 0.1, tolerance = 0.5 t 0 - 100"])
+          (om/build highcharts/highcharts [["v" "t"]
+                                           [(fitzhugh-nagumo forward-euler-integrate {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
+                                           "linear"
+                                           "Forward Euler FitzHugh-Nagumo model timestep 0.1"])
+          (om/build highcharts/highcharts [["v" "t"]
+                                           [(fitzhugh-nagumo euler-pc {:alpha 0.2 :epsilon 0.01 :gamma 0.5 :Iapp 0.0})]
+                                           "linear"
+                                           "Euler-pc FitzHugh-Nagumo model timestep 0.1"]))))))

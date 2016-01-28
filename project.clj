@@ -16,10 +16,13 @@
                  [bk/ring-gzip "0.1.1"]
                  [compojure "1.4.0"]
                  [enlive "1.1.6"]
+                 [sablono "0.4.0"]
+                 [binaryage/devtools "0.4.1"]
                  [org.omcljs/om "0.9.0"]
                  [secretary "1.2.3"]
                  [cljsjs/jquery "1.9.1-0"]
                  [cljsjs/highcharts "4.1.10-2"]
+                 [exicon/semantic-ui "2.0.6-SNAPSHOT"]
                  [environ "1.0.0"]]
 
   :plugins [[lein-cljsbuild "1.0.5"]
