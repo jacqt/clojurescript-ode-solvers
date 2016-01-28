@@ -18,10 +18,7 @@
                  [enlive "1.1.6"]
                  [org.omcljs/om "0.9.0"]
                  [secretary "1.2.3"]
-                 [cljsjs/bootstrap "3.3.5-0"]
-                 [cljsjs/bootstrap-timepicker "0.5.1-0"]
                  [cljsjs/jquery "1.9.1-0"]
-                 [cljsjs/moment "2.10.6-0"]
                  [cljsjs/highcharts "4.1.10-2"]
                  [environ "1.0.0"]]
 

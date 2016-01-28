@@ -123,21 +123,16 @@
   (fn [v w t]
     (- v (* gamma w))))
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;; GRAPH ;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn gen-data-series [dataset]
   {:data dataset
    :lineWidth 2
    :marker {:enabled false}})
-
-(defn create-chart [container datasets y-axis-type title]
-  (js/Highcharts.Chart.
-    (clj->js
-      {:chart {:renderTo container
-               :type "scatter"}
-       :plotOptions {:series {:turboThreshold 0}}
-       :title {:text title}
-       :xAxis {:type "linear"}
-       :yAxis {:type y-axis-type}
-       :series (map gen-data-series datasets)})))
 
 (defn label-dataset [[y-label x-label] dataset]
   (let [x-label (keyword x-label)
@@ -152,6 +147,17 @@
   (map
     (partial label-dataset labels)
     datasets))
+
+(defn create-chart [container datasets y-axis-type title]
+  (js/Highcharts.Chart.
+    (clj->js
+      {:chart {:renderTo container
+               :type "scatter"}
+       :plotOptions {:series {:turboThreshold 0}}
+       :title {:text title}
+       :xAxis {:type "linear"}
+       :yAxis {:type y-axis-type}
+       :series (map gen-data-series datasets)})))
 
 (defn highcharts [[labels datasets y-axis-type title] owner]
   (reify
@@ -170,6 +176,10 @@
             datasets (label-all datasets labels)]
         (om/set-state! owner :chart (create-chart container datasets y-axis-type title))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;; OTHER SHIT ;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn fitzhugh-nagumo [solver {:keys [alpha epsilon gamma Iapp]}]
   (solver [(fhn-dv alpha epsilon Iapp) (fhn-dw gamma)] {:v 0.64 :w 0} 0 1 0.005))
 
@@ -181,6 +191,7 @@
     0
     (keys coord1)))
 
+;; sqrt((e1 + e2 + e3 + ... + eN) / N)
 (defn get-error [solver {:keys [diff-equations start-values start-time end timestep expected-values-equations]}]
   (let [data (solver diff-equations start-values start-time end timestep)]
     (js/Math.sqrt
@@ -232,16 +243,6 @@
             "ODE Solver in Clojurescript"))
         (dom/div
           #js {:className "dashboard-content"}
-          ;(with-out-str (print (compare-solvers
-          ;[forward-euler-integrate euler-pc]
-          ;{:diff-equations [circle-dy1-dt circle-dy2-dt]
-          ;:start-values {:y1 1 :y2 0}
-          ;:start-time 0
-          ;:end 6.0
-          ;:min-timestep 0.01
-          ;:max-timestep 0.1
-          ;:expected-values-equations {:y1 js/Math.cos
-          ;:y2 js/Math.sin}})))
           (om/build highcharts [["error" "timestep"]
                                 (compare-solvers
                                   [forward-euler-integrate euler-pc]
