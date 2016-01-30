@@ -6,7 +6,7 @@
             [ode-solver.utils.highcharts :as highcharts]))
 
 (defn format-as-numbers [data]
-  (vec (map #(into {} (map (fn [[k v]] [k (int v)]) %)) data)))
+  (vec (map #(into {} (map (fn [[k v]] [k (js/parseFloat v)]) %)) data)))
 
 (defn update-data-options! [app-state]
   (http/get-data-files
