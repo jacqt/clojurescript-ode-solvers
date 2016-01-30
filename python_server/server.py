@@ -27,7 +27,6 @@ def data_files():
 
 @app.route("/data_files/<filename>")
 def get_data(filename):
-  print "?????"
   with open(os.path.join(data_dir, filename)) as fopen:
     reader = csv.reader(fopen)
     body = reduce(reduce_to_json, reader, {"data": []})
@@ -35,4 +34,4 @@ def get_data(filename):
     return flask.jsonify(body)
 
 if __name__ == "__main__":
-   app.run()
+  app.run(port='2589')

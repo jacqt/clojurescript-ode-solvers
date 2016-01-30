@@ -5,7 +5,7 @@
 
 (enable-console-print!)
 
-(def BASE_URL "http://localhost:5000/")
+(def BASE_URL "http://github.space:2589/")
 (def DATA_URL (str BASE_URL "data_files"))
 
 ; parses goog.net.XhrIo response to a json
