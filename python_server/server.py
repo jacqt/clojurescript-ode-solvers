@@ -34,4 +34,4 @@ def get_data(filename):
     return flask.jsonify(body)
 
 if __name__ == "__main__":
-  app.run(port='2589')
+  app.run(host='0.0.0.0', port='2589')
